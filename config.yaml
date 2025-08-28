@@ -1,0 +1,10 @@
+env: "testing"
+udp_port_range: "20001-20001"
+http_addr: ":20000"
+fpm_status_url: "http://127.0.0.1:80/fpm-status?json&full"
+http_client_timeout: 3
+load_fpm_status_timeout: 10
+stuck_process_duration: 10
+buffer: 1048576 # in bytes
+packets_size: 100
+app_name: "app-name"

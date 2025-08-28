@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.18.x"
+          cache: true
+
+      - name: Vendor modules (go mod vendor)
+        run: go mod vendor
+
+      - name: Run tests
+        run: go test ./... -count=1
+
+  build:
+    name: Compile binary
+    runs-on: ubuntu-latest
+    needs: test
+    env:
+      GOOS: linux
+      GOARCH: amd64
+      CGO_ENABLED: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.18.x"
+          cache: true
+
+      - name: Vendor modules (go mod vendor)
+        run: go mod vendor
+
+      - name: Compute APP_VERSION (tag vs branch)
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            APP_VERSION="${GITHUB_REF_NAME}"
+          else
+            TIMESTAMP="$(date '+%Y%m%d-%H%M%S')"
+            SHORT_SHA="$(git rev-parse --short "$GITHUB_SHA")"
+            # Replace underscores with dashes in branch name
+            REF_SANITIZED="${GITHUB_REF_NAME//_/-}"
+            APP_VERSION="${TIMESTAMP}-${SHORT_SHA}-${REF_SANITIZED}"
+          fi
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build (linux/amd64, CGO=0)
+        run: |
+          mkdir -p build
+          go build -o build/trace-monitor-collector \
+            -ldflags "-X 'main.AppVersion=${APP_VERSION}'" \
+            .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-monitor-collector-${{ steps.ver.outputs.app_version }}
+          path: build/
+          # GitHub minimum is 1 day (GitLab allowed 1 hour)
+          retention-days: 1
+
