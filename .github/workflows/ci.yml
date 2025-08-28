@@ -34,6 +34,9 @@ jobs:
     name: Compile binary
     runs-on: ubuntu-latest
     needs: test
+    outputs:                      
+      artifact_name: ${{ steps.name.outputs.artifact_name }}
+      app_version: ${{ steps.ver.outputs.app_version }}
     env:
       GOOS: linux
       GOARCH: amd64
@@ -60,7 +63,6 @@ jobs:
           else
             TIMESTAMP="$(date '+%Y%m%d-%H%M%S')"
             SHORT_SHA="$(git rev-parse --short "$GITHUB_SHA")"
-            # Replace underscores with dashes in branch name
             REF_SANITIZED="${GITHUB_REF_NAME//_/-}"
             APP_VERSION="${TIMESTAMP}-${SHORT_SHA}-${REF_SANITIZED}"
           fi
@@ -74,12 +76,18 @@ jobs:
             -ldflags "-X 'main.AppVersion=${APP_VERSION}'" \
             .
 
+      - name: Set artifact name
+        id: name
+        run: |
+          echo "artifact_name=trace-monitor-collector-${APP_VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: trace-monitor-collector-${{ steps.ver.outputs.app_version }}
-          path: build/
+          name: ${{ steps.name.outputs.artifact_name }}
+          path: build/trace-monitor-collector
           retention-days: 1
+
 
   release:
     name: Publish Release assets
@@ -87,7 +95,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # needed to create/update releases
+      contents: write
     steps:
       - name: Download built artifact
         uses: actions/download-artifact@v4
@@ -98,9 +106,7 @@ jobs:
       - name: Package binary with versioned filename
         run: |
           cd dist
-          # rename to include version tag
           mv trace-monitor-collector "${{ needs.build.outputs.artifact_name }}"
-          # optional: tar.gz too (keep raw file as well if you like)
           tar -czf "${{ needs.build.outputs.artifact_name }}.tar.gz" "${{ needs.build.outputs.artifact_name }}"
           sha256sum "${{ needs.build.outputs.artifact_name }}" "${{ needs.build.outputs.artifact_name }}.tar.gz" > SHA256SUMS
 
@@ -113,5 +119,4 @@ jobs:
             dist/${{ needs.build.outputs.artifact_name }}
             dist/${{ needs.build.outputs.artifact_name }}.tar.gz
             dist/SHA256SUMS
-          draft: false
-          prerelease: false
+
