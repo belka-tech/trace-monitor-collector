@@ -63,7 +63,7 @@ jobs:
           else
             TIMESTAMP="$(date '+%Y%m%d-%H%M%S')"
             SHORT_SHA="$(git rev-parse --short "$GITHUB_SHA")"
-            REF_SANITIZED="${GITHUB_REF_NAME//_/-}"
+            REF_SANITIZED="${GITHUB_REF_NAME//[^a-zA-Z0-9.-]/-}"
             APP_VERSION="${TIMESTAMP}-${SHORT_SHA}-${REF_SANITIZED}"
           fi
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
