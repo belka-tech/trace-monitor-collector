@@ -7,7 +7,7 @@
 
 A lightweight Go service that receives trace updates over UDP and keeps the latest trace and current span for each process in memory. The protocol works with **any programming language**; [PHP](https://github.com/belka-tech/trace-monitor-php-client) is currently the only provided client. Other languages can implement the same [JSON/UDP protocol](#udp-protocol).
 
-[Architecture](#architecture) · [Quick start](#quick-start) · [Configuration](#configuration) · [PHP example](#php-example) · [UDP protocol](#udp-protocol)
+[Architecture](#architecture) · [Quick start](#quick-start) · [Configuration](#configuration) · [Metrics](doc/metrics.md) · [PHP example](#php-example) · [UDP protocol](#udp-protocol)
 
 ## Architecture
 
@@ -127,17 +127,7 @@ Use a PHP-FPM status endpoint only for its own workers: cleanup removes old entr
 
 In the trace output, `elapsedTime` measures time since the last recorded update.
 
-Add the collector to your Prometheus configuration:
-
-```yaml
-scrape_configs:
-  - job_name: trace-monitor
-    metrics_path: /console/metrics
-    static_configs:
-      - targets: ["127.0.0.1:20000"]
-```
-
-Use the collector's reachable address when Prometheus runs elsewhere. Collector metrics carry `node`, `app` and `env` labels. Useful starting points are `trace_monitor_count_active_pid` and `trace_monitor_total_channel_reset`, which counts queue overflows that discard pending packets.
+See the [Prometheus metrics reference](doc/metrics.md) for scrape configuration, a summary table, detailed descriptions of all eight Collector metrics and PromQL examples.
 
 The collector keeps live state in memory; completed traces are removed and restarts clear the state. UDP delivery is best effort. Keep the HTTP and UDP listeners on a trusted network: trace data can contain SQL, application context and backtraces, and the collector has no built-in authentication.
 
