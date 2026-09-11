@@ -127,7 +127,7 @@ Use a PHP-FPM status endpoint only for its own workers: cleanup removes old entr
 
 In the trace output, `elapsedTime` measures time since the last recorded update.
 
-See the [Prometheus metrics reference](doc/metrics.md) for scrape configuration, a summary table, detailed descriptions of every metric and PromQL examples.
+See the [Prometheus metrics reference](doc/metrics.md) for scrape configuration, a summary table, detailed descriptions of all eight Collector metrics and PromQL examples.
 
 The collector keeps live state in memory; completed traces are removed and restarts clear the state. UDP delivery is best effort. Keep the HTTP and UDP listeners on a trusted network: trace data can contain SQL, application context and backtraces, and the collector has no built-in authentication.
 
